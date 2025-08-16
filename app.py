@@ -2,7 +2,7 @@ import streamlit as st
 from PyPDF2 import PdfReader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.embeddings.openai import OpenAIEmbeddings
-from langchain.vectorstores import FAISS
+from langchain.vectorstores import Chroma
 from langchain.chat_models import ChatOpenAI
 from langchain.schema import HumanMessage
 import os
@@ -13,6 +13,7 @@ PASSWORD = "password123"
 
 # --- OpenAI API key ---
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
+VECTOR_DB_PATH = None  # In-memory Chroma DB
 
 # --- Session state ---
 if "logged_in" not in st.session_state:
@@ -101,7 +102,7 @@ def chunk_by_section(text):
 
     return final_chunks
 
-# --- Cached vector db using FAISS ---
+# --- Cached vector db ---
 @st.cache_resource
 def create_vector_db(texts):
     embeddings = OpenAIEmbeddings(openai_api_key=OPENAI_API_KEY)
@@ -114,7 +115,7 @@ def create_vector_db(texts):
             all_chunks.append(c["text"])
             metadata.append({"section": c["section"]})
 
-    vectordb = FAISS.from_texts(all_chunks, embeddings, metadatas=metadata)
+    vectordb = Chroma.from_texts(all_chunks, embedding=embeddings, metadatas=metadata, persist_directory=VECTOR_DB_PATH)
     return vectordb, len(all_chunks)
 
 # --- Load docs and create vector db ---
@@ -216,7 +217,7 @@ elif page == "Methodology":
 ### Data Flows & Implementation
 1. Load PDFs & TXT documents
 2. Section-aware chunking (~700 chars, 100-char overlap)
-3. Convert chunks to embeddings & store in FAISS vector DB
+3. Convert chunks to embeddings & store in Chroma vector DB
 4. Retrieve top-k chunks using cosine similarity
 5. Generate answers using LLM with retrieved context
 
