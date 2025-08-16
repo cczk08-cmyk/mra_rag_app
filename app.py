@@ -2,7 +2,7 @@ import streamlit as st
 from PyPDF2 import PdfReader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.embeddings.openai import OpenAIEmbeddings
-from langchain.vectorstores import Chroma
+from langchain.vectorstores import FAISS
 from langchain.chat_models import ChatOpenAI
 from langchain.schema import HumanMessage
 import os
@@ -101,7 +101,7 @@ def chunk_by_section(text):
 
     return final_chunks
 
-# --- Cached in-memory vector db ---
+# --- Cached vector db using FAISS ---
 @st.cache_resource
 def create_vector_db(texts):
     embeddings = OpenAIEmbeddings(openai_api_key=OPENAI_API_KEY)
@@ -114,8 +114,7 @@ def create_vector_db(texts):
             all_chunks.append(c["text"])
             metadata.append({"section": c["section"]})
 
-    # Use in-memory Chroma to avoid SQLite issues
-    vectordb = Chroma.from_texts(all_chunks, embedding=embeddings, persist_directory=None, metadatas=metadata)
+    vectordb = FAISS.from_texts(all_chunks, embeddings, metadatas=metadata)
     return vectordb, len(all_chunks)
 
 # --- Load docs and create vector db ---
@@ -217,11 +216,13 @@ elif page == "Methodology":
 ### Data Flows & Implementation
 1. Load PDFs & TXT documents
 2. Section-aware chunking (~700 chars, 100-char overlap)
-3. Convert chunks to embeddings & store in Chroma vector DB (in-memory)
+3. Convert chunks to embeddings & store in FAISS vector DB
 4. Retrieve top-k chunks using cosine similarity
 5. Generate answers using LLM with retrieved context
 
 ### Use Cases
+There are two main use cases:
+
 1. **Chat with Information**  
    - Users ask natural language questions and get concise answers referencing the retrieved document chunks.
 
