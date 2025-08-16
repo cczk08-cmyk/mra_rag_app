@@ -13,7 +13,6 @@ PASSWORD = "password123"
 
 # --- OpenAI API key ---
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
-VECTOR_DB_PATH = "db"
 
 # --- Session state ---
 if "logged_in" not in st.session_state:
@@ -102,9 +101,9 @@ def chunk_by_section(text):
 
     return final_chunks
 
-# --- Cached vector db ---
-@st.cache(allow_output_mutation=True)
-def load_or_create_vector_db(texts):
+# --- Cached in-memory vector db ---
+@st.cache_resource
+def create_vector_db(texts):
     embeddings = OpenAIEmbeddings(openai_api_key=OPENAI_API_KEY)
     all_chunks = []
     metadata = []
@@ -115,15 +114,14 @@ def load_or_create_vector_db(texts):
             all_chunks.append(c["text"])
             metadata.append({"section": c["section"]})
 
-    vectordb = Chroma.from_texts(all_chunks, embedding=embeddings,
-                                 persist_directory=VECTOR_DB_PATH, metadatas=metadata)
-    vectordb.persist()
+    # Use in-memory Chroma to avoid SQLite issues
+    vectordb = Chroma.from_texts(all_chunks, embedding=embeddings, persist_directory=None, metadatas=metadata)
     return vectordb, len(all_chunks)
 
 # --- Load docs and create vector db ---
 documents = load_documents()
 if documents:
-    vectordb, total_chunks = load_or_create_vector_db(documents)
+    vectordb, total_chunks = create_vector_db(documents)
     st.sidebar.success(f"Total chunks created: {total_chunks}")
 else:
     vectordb = None
@@ -215,18 +213,15 @@ Supports SMEs exploring overseas expansion and navigating MRA grant eligibility.
 # --- Methodology ---
 elif page == "Methodology":
     st.title("Methodology")
-
     st.markdown("""
 ### Data Flows & Implementation
 1. Load PDFs & TXT documents
 2. Section-aware chunking (~700 chars, 100-char overlap)
-3. Convert chunks to embeddings & store in Chroma vector DB
+3. Convert chunks to embeddings & store in Chroma vector DB (in-memory)
 4. Retrieve top-k chunks using cosine similarity
 5. Generate answers using LLM with retrieved context
 
 ### Use Cases
-There are two main use cases:
-
 1. **Chat with Information**  
    - Users ask natural language questions and get concise answers referencing the retrieved document chunks.
 
