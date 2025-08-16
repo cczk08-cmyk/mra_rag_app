@@ -194,25 +194,41 @@ elif page == "About Us":
 Many companies exploring overseas expansion are often **uncertain whether their activities are eligible for grant support** under the Market Readiness Assistance (MRA) scheme.  
 This chatbot enables companies to **self-serve for straightforward enquiries**, providing quick answers about the MRA grant without needing hotline assistance.  
 In doing so, it **reduces workload on call centres and SME centres**, helping companies make informed decisions efficiently.
+
+### Project Scope
+Supports SMEs exploring overseas expansion and navigating MRA grant eligibility.
+
+### Objectives
+- Self-serve for common MRA questions
+- Reduce SME centre workload
+- Provide accurate, RAG-powered guidance
+
+### Data Sources
+- MRA PDFs, website text, FAQs
+
+### Features
+- Chatbot answering eligibility & supportable activity questions
+- Section-aware RAG with retrieval from chunked documents
+- Insight dashboard for SMEs
 """)
 
 # --- Methodology ---
 elif page == "Methodology":
     st.title("Methodology")
     st.write("""
-The chatbot uses a **Retrieval-Augmented Generation (RAG)** approach:
+### Data Flows & Implementation
+1. Load PDFs & TXT documents
+2. Section-aware chunking (700 chars, 100-char overlap)
+3. Convert chunks to embeddings & store in Chroma vector DB
+4. Retrieve top-k chunks using cosine similarity
+5. Generate answer using LLM with retrieved context
 
-1. **Section-aware chunking**  
-   - Documents are split by **fixed sections**: About MRA, Eligibility, How to Apply, Supportable Activities, FAQ.  
-   - Each section is further split into smaller chunks (~700 chars with 100 char overlap) to maintain context.
-
-2. **Vector embeddings**  
-   - Each chunk is converted to an embedding using OpenAI embeddings.  
-   - Stored in a persistent Chroma vector database with section metadata.
-
-3. **Query & retrieval**  
-   - User queries are matched to the most relevant chunks via similarity search (cosine similarity).
-
-4. **Answer generation with LLM**  
-   - Retrieved chunks are provided as context to the LLM, along with previous chat history, to generate concise, accurate answers.
-""")
+### Use Cases
+1. Chat with Information
+```mermaid
+flowchart LR
+    A[User Input] --> B[Retrieve top-k chunks from Vector DB]
+    B --> C[Send chunks + query to LLM]
+    C --> D[LLM generates answer]
+    D --> E[Display answer to user])
+    """)
