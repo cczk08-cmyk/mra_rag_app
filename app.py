@@ -215,20 +215,22 @@ Supports SMEs exploring overseas expansion and navigating MRA grant eligibility.
 # --- Methodology ---
 elif page == "Methodology":
     st.title("Methodology")
-    st.write("""
+
+    st.markdown("""
 ### Data Flows & Implementation
 1. Load PDFs & TXT documents
-2. Section-aware chunking (700 chars, 100-char overlap)
+2. Section-aware chunking (~700 chars, 100-char overlap)
 3. Convert chunks to embeddings & store in Chroma vector DB
 4. Retrieve top-k chunks using cosine similarity
-5. Generate answer using LLM with retrieved context
+5. Generate answers using LLM with retrieved context
 
 ### Use Cases
-1. Chat with Information
-```mermaid
-flowchart LR
-    A[User Input] --> B[Retrieve top-k chunks from Vector DB]
-    B --> C[Send chunks + query to LLM]
-    C --> D[LLM generates answer]
-    D --> E[Display answer to user])
-    """)
+There are two main use cases:
+
+1. **Chat with Information**  
+   - Users ask natural language questions and get concise answers referencing the retrieved document chunks.
+
+2. **Intelligent Search**  
+   - Users input search queries to find relevant information across all documents.  
+   - Top sections are retrieved, ranked, and summarized to help the user quickly locate the information they need.
+""")
