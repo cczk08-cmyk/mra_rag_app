@@ -1,7 +1,7 @@
 import streamlit as st
 from PyPDF2 import PdfReader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.embeddings.openai import OpenAIEmbeddings
+from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain.vectorstores import Chroma
 from langchain.chat_models import ChatOpenAI
 from langchain.schema import HumanMessage
@@ -105,7 +105,7 @@ def chunk_by_section(text):
 # --- Cached vector db ---
 @st.cache_resource
 def create_vector_db(texts):
-    embeddings = OpenAIEmbeddings(openai_api_key=OPENAI_API_KEY)
+    embeddings = OpenAIEmbeddings(model="text-embedding-3-small", api_key=OPENAI_API_KEY)
     all_chunks = []
     metadata = []
 
@@ -166,7 +166,7 @@ Context:
 
 User question: {query}
 """
-            llm = ChatOpenAI(model_name="gpt-4o-mini", temperature=0, openai_api_key=OPENAI_API_KEY)
+            llm = ChatOpenAI(model="gpt-4o-mini", temperature=0, api_key=OPENAI_API_KEY)
             ai_message = llm([HumanMessage(content=prompt_text)])
             answer = ai_message.content.strip()
 
