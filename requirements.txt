@@ -4,4 +4,5 @@ langchain==0.3.27
 chromadb==1.0.17
 openai==1.29.0
 langchain-community
-
+langchain-openai
+openai
