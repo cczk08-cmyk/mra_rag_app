@@ -3,7 +3,6 @@ from PyPDF2 import PdfReader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain.vectorstores import Chroma
-from langchain.chat_models import ChatOpenAI
 from langchain.schema import HumanMessage
 import os
 
