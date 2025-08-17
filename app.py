@@ -1,3 +1,7 @@
+__import__('pysqlite3')
+import sys
+sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
+
 import streamlit as st
 from PyPDF2 import PdfReader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -11,7 +15,16 @@ USERNAME = "admin"
 PASSWORD = "password123"
 
 # --- OpenAI API key ---
-OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
+# Try to get from Streamlit secrets first, then environment variables
+try:
+    OPENAI_API_KEY = st.secrets["OPENAI_API_KEY"]
+except:
+    OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
+
+# Check if API key is available
+if not OPENAI_API_KEY:
+    st.error("OpenAI API key not found. Please set it in Streamlit secrets or environment variables.")
+    st.stop()
 VECTOR_DB_PATH = None  # In-memory Chroma DB
 
 # --- Session state ---
@@ -41,32 +54,59 @@ page = st.sidebar.radio("Go to", ["Home", "About Us", "Methodology"])
 def load_documents():
     texts = []
 
-    # PDF
-    pdf_path = "mra_supportable_activities.pdf"
-    if os.path.exists(pdf_path):
-        pdf_reader = PdfReader(pdf_path)
-        pdf_text = "".join([page.extract_text() or "" for page in pdf_reader.pages])
-        if pdf_text.strip():
-            texts.append(pdf_text)
-            st.sidebar.success(f"Loaded PDF: {pdf_path}, {len(pdf_text)} chars")
-        else:
-            st.sidebar.warning(f"{pdf_path} contains no text.")
-    else:
-        st.sidebar.warning(f"{pdf_path} not found.")
+    # PDF - Check current directory and common paths
+    pdf_paths = [
+        "mra_supportable_activities.pdf",
+        "./mra_supportable_activities.pdf",
+        "data/mra_supportable_activities.pdf"
+    ]
+    
+    pdf_loaded = False
+    for pdf_path in pdf_paths:
+        if os.path.exists(pdf_path):
+            try:
+                pdf_reader = PdfReader(pdf_path)
+                pdf_text = "".join([page.extract_text() or "" for page in pdf_reader.pages])
+                if pdf_text.strip():
+                    texts.append(pdf_text)
+                    st.sidebar.success(f"Loaded PDF: {pdf_path}, {len(pdf_text)} chars")
+                    pdf_loaded = True
+                    break
+                else:
+                    st.sidebar.warning(f"{pdf_path} contains no text.")
+            except Exception as e:
+                st.sidebar.warning(f"Error reading {pdf_path}: {e}")
+    
+    if not pdf_loaded:
+        st.sidebar.warning("PDF file not found in any expected location.")
 
-    # TXT documents
+    # TXT documents - Check multiple paths
     txt_files = ["mra_website.txt", "mra_faq.txt"]
-    for txt_path in txt_files:
-        if os.path.exists(txt_path):
-            with open(txt_path, "r", encoding="utf-8") as f:
-                txt_text = f.read()
-            if txt_text.strip():
-                texts.append(txt_text)
-                st.sidebar.success(f"Loaded TXT: {txt_path}, {len(txt_text)} chars")
-            else:
-                st.sidebar.warning(f"{txt_path} contains no text.")
-        else:
-            st.sidebar.warning(f"{txt_path} not found.")
+    for txt_file in txt_files:
+        txt_paths = [
+            txt_file,
+            f"./{txt_file}",
+            f"data/{txt_file}"
+        ]
+        
+        txt_loaded = False
+        for txt_path in txt_paths:
+            if os.path.exists(txt_path):
+                try:
+                    with open(txt_path, "r", encoding="utf-8") as f:
+                        txt_text = f.read()
+                    if txt_text.strip():
+                        texts.append(txt_text)
+                        st.sidebar.success(f"Loaded TXT: {txt_path}, {len(txt_text)} chars")
+                        txt_loaded = True
+                        break
+                    else:
+                        st.sidebar.warning(f"{txt_path} contains no text.")
+                except Exception as e:
+                    st.sidebar.warning(f"Error reading {txt_path}: {e}")
+        
+        if not txt_loaded:
+            st.sidebar.warning(f"{txt_file} not found in any expected location.")
 
     return texts
 
@@ -129,8 +169,12 @@ def create_vector_db(texts):
 # --- Load docs and create vector db ---
 documents = load_documents()
 if documents:
-    vectordb, total_chunks = create_vector_db(documents)
-    st.sidebar.success(f"Total chunks created: {total_chunks}")
+    try:
+        vectordb, total_chunks = create_vector_db(documents)
+        st.sidebar.success(f"Total chunks created: {total_chunks}")
+    except Exception as e:
+        st.sidebar.error(f"Error creating vector database: {e}")
+        vectordb = None
 else:
     vectordb = None
     st.sidebar.warning("No documents loaded. Vector DB not created.")
