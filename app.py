@@ -104,7 +104,11 @@ def chunk_by_section(text):
 # --- Cached vector db ---
 @st.cache_resource
 def create_vector_db(texts):
-    embeddings = OpenAIEmbeddings(model="text-embedding-3-small", api_key=OPENAI_API_KEY)
+    # Fixed: Use openai_api_key parameter instead of api_key
+    embeddings = OpenAIEmbeddings(
+        model="text-embedding-3-small", 
+        openai_api_key=OPENAI_API_KEY
+    )
     all_chunks = []
     metadata = []
 
@@ -114,7 +118,12 @@ def create_vector_db(texts):
             all_chunks.append(c["text"])
             metadata.append({"section": c["section"]})
 
-    vectordb = Chroma.from_texts(all_chunks, embedding=embeddings, metadatas=metadata, persist_directory=VECTOR_DB_PATH)
+    vectordb = Chroma.from_texts(
+        all_chunks, 
+        embedding=embeddings, 
+        metadatas=metadata, 
+        persist_directory=VECTOR_DB_PATH
+    )
     return vectordb, len(all_chunks)
 
 # --- Load docs and create vector db ---
@@ -157,7 +166,7 @@ if page == "Home":
             # --- Build prompt ---
             prompt_text = f"""
 You are an expert on Singapore's Market Readiness Assistance (MRA) Grant. 
-Answer the user’s question based ONLY on the text below.
+Answer the user's question based ONLY on the text below.
 If the answer is not in the text, respond with "I don't know".
 
 Context:
@@ -165,7 +174,12 @@ Context:
 
 User question: {query}
 """
-            llm = ChatOpenAI(model="gpt-4o-mini", temperature=0, api_key=OPENAI_API_KEY)
+            # Fixed: Use openai_api_key parameter instead of api_key
+            llm = ChatOpenAI(
+                model="gpt-4o-mini", 
+                temperature=0, 
+                openai_api_key=OPENAI_API_KEY
+            )
             ai_message = llm([HumanMessage(content=prompt_text)])
             answer = ai_message.content.strip()
 
